@@ -1,0 +1,6 @@
+# YAML config file - joined to launch.py
+
+offboard_control:
+  ros__parameters:
+    hostname: "192.168.50.56"
+    buffer_size: 200
