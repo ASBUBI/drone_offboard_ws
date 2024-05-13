@@ -3,6 +3,7 @@
 OffboardControl::OffboardControl() : Node("v6c_offboard_control")
 {
     // Parameters definition
+    this->declare_parameter<float>("setpoint_tolerance", )
 
     // 50Hz rate
     this->timer_ = this->create_wall_timer(std::chrono::milliseconds(20), std::bind(&OffboardControl::timer_callback, this));
@@ -21,7 +22,15 @@ OffboardControl::OffboardControl() : Node("v6c_offboard_control")
     this->vehicle_command_pub_ = this->create_publisher<px4_msgs::msg::VehicleCommand>("fmu/in/vehicle_command",10);
 
     // Vehicle Status subscribtion -> to understand vehicle current flight mode
-    this->vehicle_status_sub_ = this->create_subscription<px4_msgs::msg::VehicleStatus>("fmu/out/vehicle_status", rclcpp::SensorDataQoS(), std::bind(&OffboardControl::vehicle_status_callback, this, std::placeholders::_1));
+    this->vehicle_status_sub_ = this->create_subscription<px4_msgs::msg::VehicleStatus>(
+        "fmu/out/vehicle_status", rclcpp::SensorDataQoS(), 
+        std::bind(&OffboardControl::vehicle_status_callback, this, std::placeholders::_1)
+    );
+    // Vehicle local position subscription - trajectory setpoint definition
+    this->vehicle_local_position_sub_ = this->create_subscription<px4_msgs::msg::VehicleLocalPosition>(
+        "/fmu/out/vehicle_local_position", rclcpp::SensorDataQoS(),
+        std::bind(&OffboardControl::vehicle_local_position_callback, this, std::placeholders::_1)
+    );
 }
 
 /**
@@ -34,6 +43,13 @@ void OffboardControl::timer_callback()
     // OffboardControlMode publish - Heartbeat
     ctrl_mode_msg_.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     offboard_ctrl_mode_pub_->publish(ctrl_mode_msg_);
+
+    switch(setpoints_reached_)
+    {
+        case 0:
+            
+            break;
+    }
 }
 
 // MAVLink common message set
@@ -96,7 +112,7 @@ void OffboardControl::engage_landing()
     );
 }
 
-void OffboardControl::publish_trajectory_setpoint(std::vector<float> position_setpoint, float yaw_setpoint)
+void OffboardControl::publish_trajectory_setpoint(const struct Setpoint & setpoint)
 {
     px4_msgs::msg::TrajectorySetpoint msg{};
     msg.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -149,6 +165,23 @@ void OffboardControl::vehicle_status_callback(const px4_msgs::msg::VehicleStatus
             );
             break;
     }
+}
+
+void OffboardControl::vehicle_local_position_callback(const px4_msgs::msg::VehicleLocalPosition & msg)
+{
+    // check if UAV is inside sphere of radius "tolerance" centered in the setpoint
+    if(check_setpoint_distance(msg, current_setpoint_))
+    {
+        ++setpoints_reached_;
+    }
+    
+}
+
+bool OffboardControl::check_setpoint_distance(const px4_msgs::msg::VehicleLocalPosition & msg, const struct Setpoint & setpoint)
+{
+    float square(float value) {return value*value;};
+
+    return ( sqrt(square(msg.x - setpoint.x) + square(msg.y - setpoint.y) + (msg.z - setpoint.z)) <= setpoint_tolerance_ );
 }
 
 int main(int argc, char * argv[])

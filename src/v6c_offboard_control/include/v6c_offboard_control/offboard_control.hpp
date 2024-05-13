@@ -7,10 +7,19 @@
 #include "px4_msgs/msg/vehicle_command.hpp"
 #include "px4_msgs/msg/trajectory_setpoint.hpp"
 #include "px4_msgs/msg/vehicle_status.hpp"
+#include "px4_msgs/msg/vehicle_local_position.hpp"
 
 #include <vector>
 #include <chrono>
 #include <iostream>
+#include <cmath>
+
+struct Setpoint {
+    float x;
+    float y;
+    float z;
+    float yaw;
+}
 
 class OffboardControl : public rclcpp::Node
 {
@@ -27,25 +36,35 @@ class OffboardControl : public rclcpp::Node
         void engage_offboard_mode();
         void engage_landing();
 
-        void publish_trajectory_setpoint(std::vector<float> position_setpoint, float yaw_setpoint);
+        // Publishers
+        void publish_trajectory_setpoint(const struct Setpoint & setpoint);
 
         // Subscribers callbacks
         void vehicle_status_callback(const px4_msgs::msg::VehicleStatus & msg);
+        void vehicle_local_position_callback(const px4_msgs::msg::VehicleLocalPosition & msg);
+
+        bool check_setpoint_distance(const px4_msgs::msg::VehicleLocalPosition & msg, const struct Setpoint & setpoint);
 
     private:
         px4_msgs::msg::OffboardControlMode ctrl_mode_msg_;
         unsigned short vehicle_flight_mode_;
 
+        // Loop-timer
         rclcpp::TimerBase::SharedPtr timer_;
 
         // Subscribers
         rclcpp::Subscription<px4_msgs::msg::VehicleStatus>::SharedPtr vehicle_status_sub_;
+        rclcpp::Subscription<px4_msgs::msg::VehicleLocalPosition>::SharedPtr vehicle_local_position_sub_;
         
         // Publishers
         rclcpp::Publisher<px4_msgs::msg::OffboardControlMode>::SharedPtr offboard_ctrl_mode_pub_;
         rclcpp::Publisher<px4_msgs::msg::VehicleCommand>::SharedPtr vehicle_command_pub_;
         rclcpp::Publisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr trajectory_setpoint_pub_;
 
+        // Drone proprietary vars
+        unsigned short setpoints_reached_ = 0;
+        unsigned float setpoint_tolerance_;
+        auto current_setpoint_ = std::make_shared<Setpoint>(Setpoint{});
 };
 
 #endif

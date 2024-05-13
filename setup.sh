@@ -1,5 +1,8 @@
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./src/vicon_stream/vicon_libs
 
+echo "Importing \"px4_msgs\" package\n"
+git clone https://github.com/PX4/px4_msgs.git src/px4_msgs
+
 echo "Building \"px4_msgs\" package REQUIRED to build others..."
 colcon build --packages-select px4_msgs
 
