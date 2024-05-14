@@ -3,9 +3,13 @@
 
 if [ $DISTRIB_CODENAME == "jammy" ]
 then
+    echo "Found distribution "
+    echo $DISTRIB_CODENAME
     source /opt/ros/humble/setup.bash
 elif [ $DISTRIB_CODENAME == "focal" ]
 then
+    echo "Found distribution "
+    echo $DISTRIB_CODENAME
     source /opt/ros/foxy/setup.bash
 else
     echo "No allowed ROS distro found"
