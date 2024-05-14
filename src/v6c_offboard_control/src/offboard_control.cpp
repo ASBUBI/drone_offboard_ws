@@ -53,7 +53,15 @@ void OffboardControl::timer_callback()
 
             // Define first setpoint (takeoff)
             define_setpoint(0.0, 0.0, -1.0, 0.0);
+            publish_trajectory_setpoint(current_setpoint_);
             ++setpoints_reached_;
+            break;
+
+        case 1:
+            if(check_setpoint_distance)
+            {
+                define_setpoint()
+            }
             break;
     }
 }
