@@ -121,9 +121,9 @@ void ViconClient::publish_vehicle_odometry(ViconDataStreamSDK::CPP::Output_GetSe
     // To check || Need to define ViconClient axis mapping to FRD before
     msg.pose_frame = px4_msgs::msg::VehicleOdometry::POSE_FRAME_FRD;
     msg.position = {
-        static_cast<float>(position.Translation[0]) / float(1000), // conversion to mm
-        static_cast<float>(position.Translation[1]) / float(1000), // conversion to mm
-        static_cast<float>(position.Translation[2]) / float(1000)  // conversion to mm
+        static_cast<float>(position.Translation[0]),
+        static_cast<float>(position.Translation[1]),
+        static_cast<float>(position.Translation[2]) 
     };
     msg.q = {
         static_cast<float>(attitude_q.Rotation[0]),

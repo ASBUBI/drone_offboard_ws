@@ -3,7 +3,8 @@
 OffboardControl::OffboardControl() : Node("v6c_offboard_control")
 {
     // Parameters definition
-    this->declare_parameter<float>("setpoint_tolerance", )
+    this->declare_parameter<float>("setpoint_tolerance", 0.1);
+    this->get_parameter<float>("setpoint_tolerance", setpoint_tolerance_);
 
     // 50Hz rate
     this->timer_ = this->create_wall_timer(std::chrono::milliseconds(20), std::bind(&OffboardControl::timer_callback, this));
@@ -53,36 +54,23 @@ void OffboardControl::timer_callback()
             // Setup the drone to takeoff (sent as first setpoint)
             arm();
             engage_offboard_mode();
-
             // Define first setpoint (takeoff)
             define_setpoint(0.0, 0.0, -1.0, 0.0);
             publish_trajectory_setpoint(current_setpoint_);
-            ++setpoints_reached_;
             break;
 
-        case 1:
-            if(check_setpoint_distance)
-            {
-                define_setpoint(-1.0, 0.0, -1.0, 0.0);
-                publish_trajectory_setpoint(current_setpoint_);
-                ++setpoints_reached_;
-            }
+        case 1:           
+            define_setpoint(-1.0, 0.0, -1.0, 0.0);
+            publish_trajectory_setpoint(current_setpoint_);           
             break;
         
         case 2:
-            if(check_setpoint_distance)
-            {
-                define_setpoint(-1.0, 0.0, 0.1, 0.0);
-                publish_trajectory_setpoint(current_setpoint_);
-                ++setpoints_reached_;
-            }
+            define_setpoint(-1.0, 0.0, 0.1, 0.0);
+            publish_trajectory_setpoint(current_setpoint_);
             break;
 
         case 3:
-            if(check_setpoint_distance)
-            {
-                engage_landing();
-            }
+            engage_landing();
             break;
     }
 }
@@ -160,11 +148,11 @@ void OffboardControl::publish_trajectory_setpoint(const struct Setpoint & setpoi
     
     // NED local world frame
     msg.position = {
-        position_setpoint[0],
-        position_setpoint[1],
-        position_setpoint[2]
+        setpoint.x,
+        setpoint.y,
+        setpoint.z
     };
-    msg.yaw = yaw_setpoint; // [-PI; PI]
+    msg.yaw = setpoint.yaw; // [-PI; PI]
 }
 
 void OffboardControl::vehicle_status_callback(const px4_msgs::msg::VehicleStatus & msg)
@@ -220,17 +208,17 @@ void OffboardControl::vehicle_local_position_callback(const px4_msgs::msg::Vehic
 
 bool OffboardControl::check_setpoint_distance(const px4_msgs::msg::VehicleLocalPosition & msg, const struct Setpoint & setpoint)
 {
-    float square(float value) {return value*value;};
+    auto square = [](float value) {return value*value;};
 
     return ( sqrt(square(msg.x - setpoint.x) + square(msg.y - setpoint.y) + (msg.z - setpoint.z)) <= setpoint_tolerance_ );
 }
 
 void OffboardControl::define_setpoint(const float x, const float y, const float z, const float yaw)
 {
-    current_setpoint_->x = x;
-    current_setpoint_->y = y;
-    current_setpoint_->z = z;
-    current_setpoint_->yaw = yaw;
+    current_setpoint_.x = x;
+    current_setpoint_.y = y;
+    current_setpoint_.z = z;
+    current_setpoint_.yaw = yaw;
 }
 
 int main(int argc, char * argv[])

@@ -20,7 +20,7 @@ struct Setpoint {
     float y;
     float z;
     float yaw;
-}
+};
 
 class OffboardControl : public rclcpp::Node
 {
@@ -65,8 +65,8 @@ class OffboardControl : public rclcpp::Node
         // Drone proprietary vars
         unsigned short vehicle_flight_mode_;
         unsigned short setpoints_reached_ = 0;
-        unsigned float setpoint_tolerance_;
-        auto current_setpoint_ = std::make_shared<Setpoint>(Setpoint{});
+        float setpoint_tolerance_;
+        struct Setpoint current_setpoint_;
 };
 
 #endif
