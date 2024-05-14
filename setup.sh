@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Source ROS2 distro
+echo $ROS_DISTRO
 if [ $($ROS_DISTRO) == "humble" ]
 then
     source /opt/ros/humble/setup.bash
