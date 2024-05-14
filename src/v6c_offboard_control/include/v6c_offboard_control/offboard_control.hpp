@@ -9,6 +9,7 @@
 #include "px4_msgs/msg/vehicle_status.hpp"
 #include "px4_msgs/msg/vehicle_local_position.hpp"
 
+#include <memory>
 #include <vector>
 #include <chrono>
 #include <iostream>
@@ -41,8 +42,8 @@ class OffboardControl : public rclcpp::Node
         void publish_trajectory_setpoint(const struct Setpoint & setpoint);
 
         // Subscribers callbacks
-        void vehicle_status_callback(const px4_msgs::msg::VehicleStatus & msg);
-        void vehicle_local_position_callback(const px4_msgs::msg::VehicleLocalPosition & msg);
+        void vehicle_status_callback(const px4_msgs::msg::VehicleStatus::SharedPtr msg);
+        void vehicle_local_position_callback(const px4_msgs::msg::VehicleLocalPosition::SharedPtr msg);
 
         bool check_setpoint_distance(const px4_msgs::msg::VehicleLocalPosition & msg, const struct Setpoint & setpoint);
         void define_setpoint(const float x, const float y, const float z, const float yaw);

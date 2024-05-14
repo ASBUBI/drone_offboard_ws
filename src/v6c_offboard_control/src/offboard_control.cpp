@@ -155,9 +155,9 @@ void OffboardControl::publish_trajectory_setpoint(const struct Setpoint & setpoi
     msg.yaw = setpoint.yaw; // [-PI; PI]
 }
 
-void OffboardControl::vehicle_status_callback(const px4_msgs::msg::VehicleStatus & msg)
+void OffboardControl::vehicle_status_callback(const px4_msgs::msg::VehicleStatus::SharedPtr msg)
 {
-    switch(vehicle_flight_mode_ = msg.nav_state)
+    switch(vehicle_flight_mode_ = msg->nav_state)
     {
         case px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_MANUAL: //0
             RCLCPP_INFO(
@@ -196,7 +196,7 @@ void OffboardControl::vehicle_status_callback(const px4_msgs::msg::VehicleStatus
     }
 }
 
-void OffboardControl::vehicle_local_position_callback(const px4_msgs::msg::VehicleLocalPosition & msg)
+void OffboardControl::vehicle_local_position_callback(const px4_msgs::msg::VehicleLocalPosition::SharedPtr msg)
 {
     // check if UAV is inside sphere of radius "tolerance" centered in the setpoint
     if(check_setpoint_distance(msg, current_setpoint_))
@@ -206,11 +206,11 @@ void OffboardControl::vehicle_local_position_callback(const px4_msgs::msg::Vehic
     
 }
 
-bool OffboardControl::check_setpoint_distance(const px4_msgs::msg::VehicleLocalPosition & msg, const struct Setpoint & setpoint)
+bool OffboardControl::check_setpoint_distance(const px4_msgs::msg::VehicleLocalPosition::SharedPtr msg, const struct Setpoint & setpoint)
 {
     auto square = [](float value) {return value*value;};
 
-    return ( sqrt(square(msg.x - setpoint.x) + square(msg.y - setpoint.y) + (msg.z - setpoint.z)) <= setpoint_tolerance_ );
+    return ( sqrt(square(msg->x - setpoint.x) + square(msg->y - setpoint.y) + (msg->z - setpoint.z)) <= setpoint_tolerance_ );
 }
 
 void OffboardControl::define_setpoint(const float x, const float y, const float z, const float yaw)
