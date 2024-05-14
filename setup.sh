@@ -20,16 +20,15 @@ fi
 if [ -d "./src/vicon_stream/vicon_libs" ]
 then
     echo "Vicon SDK already installed!"
+else
+    # Download sources from specific git repo (only necessary)
+    echo "Cloning repo with ViconSDK libs..."
+    git clone https://github.com/ASBUBI/Vicon_CPPClient.git ./src/vicon_stream/Vicon_CPPClient
+    echo "Copying files into \"vicon_libs\" folder..."
+    mv ./src/vicon_stream/Vicon_CPPClient/CppClient/lib/Linux/* ./src/vicon_stream/vicon_libs
+    # sudo chmod 0755 ./vicon_libs/*.*
+    # sudo ldconfig
 fi
-
-# Download sources from specific git repo (only necessary)
-echo "Cloning repo with ViconSDK libs..."
-git clone https://github.com/ASBUBI/Vicon_CPPClient.git ./src/vicon_stream/
-mkdir ./src/vicon_stream/vicon_libs
-echo "Copying files into \"vicon_libs\" folder..."
-mv ./src/vicon_stream/Vicon_CPPClient/CppClient/lib/Linux/* ./src/vicon_stream/vicon_libs
-# sudo chmod 0755 ./vicon_libs/*.*
-# sudo ldconfig
 
 # Cleanup
 echo "Cleaning..."
