@@ -1,11 +1,10 @@
-#!/bin/bash
-
 # Source ROS2 distro
-echo $ROS_DISTRO
-if [ $($ROS_DISTRO) == "humble" ]
+. /etc/lsb-release
+
+if [ $($DISTRIB_CODENAME) == "jammy" ]
 then
     source /opt/ros/humble/setup.bash
-elif [ $($ROS_DISTRO) == 'foxy' ]
+elif [ $($DISTRIB_CODENAME) == 'focal' ]
 then
     source /opt/ros/foxy/setup.bash
 else
