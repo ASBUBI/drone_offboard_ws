@@ -44,6 +44,7 @@ class OffboardControl : public rclcpp::Node
         void vehicle_local_position_callback(const px4_msgs::msg::VehicleLocalPosition & msg);
 
         bool check_setpoint_distance(const px4_msgs::msg::VehicleLocalPosition & msg, const struct Setpoint & setpoint);
+        void define_setpoint(const float x, const float y, const float z, const float yaw);
 
     private:
         px4_msgs::msg::OffboardControlMode ctrl_mode_msg_;

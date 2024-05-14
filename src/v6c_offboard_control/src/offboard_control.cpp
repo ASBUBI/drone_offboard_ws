@@ -47,7 +47,13 @@ void OffboardControl::timer_callback()
     switch(setpoints_reached_)
     {
         case 0:
-            
+            // Setup the drone to takeoff (sent as first setpoint)
+            arm();
+            engage_offboard_mode();
+
+            // Define first setpoint (takeoff)
+            define_setpoint(0.0, 0.0, -1.0, 0.0);
+            ++setpoints_reached_;
             break;
     }
 }
@@ -69,7 +75,9 @@ void OffboardControl::publish_vehicle_command(uint16_t command, float param1, fl
 }
 
 void OffboardControl::arm()
-{   
+{   // Run pre-arm checks
+    // publish_vehicle_command(px4_msgs::msg::VehicleCommand::VEHICLE_CMD_RUN_PREARM_CHECKS)
+    
     // Send Arming command
     publish_vehicle_command(px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 1.0);
 
@@ -77,6 +85,8 @@ void OffboardControl::arm()
         this->get_logger(),
         "Arm command sent!"
     );
+
+    sleep(1); // wait 1 second after arm command is sent
 }
 
 void OffboardControl::disarm()
@@ -100,6 +110,8 @@ void OffboardControl::engage_offboard_mode()
         this->get_logger(),
         "Switching to OFFBOARD mode..."
     );
+
+    sleep(1); // wait 1 second after engaging offboard mode
 }
 
 void OffboardControl::engage_landing()
@@ -182,6 +194,14 @@ bool OffboardControl::check_setpoint_distance(const px4_msgs::msg::VehicleLocalP
     float square(float value) {return value*value;};
 
     return ( sqrt(square(msg.x - setpoint.x) + square(msg.y - setpoint.y) + (msg.z - setpoint.z)) <= setpoint_tolerance_ );
+}
+
+void OffboardControl::define_setpoint(const float x, const float y, const float z, const float yaw)
+{
+    current_setpoint_->x = x;
+    current_setpoint_->y = y;
+    current_setpoint_->z = z;
+    current_setpoint_->yaw = yaw;
 }
 
 int main(int argc, char * argv[])
