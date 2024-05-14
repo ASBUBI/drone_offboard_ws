@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Source ROS2 distro
-if [ $(ROS_DISTRO) == "humble" ]
+if [ $($ROS_DISTRO) == "humble" ]
 then
     source /opt/ros/humble/setup.bash
-elif [ $(ROS_DISTRO) == 'foxy' ]
+elif [ $($ROS_DISTRO) == 'foxy' ]
 then
     source /opt/ros/foxy/setup.bash
 else
