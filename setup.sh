@@ -51,7 +51,7 @@ colcon build --packages-select vicon_stream v6c_offboard_control
 echo "Importing \"MicroDDS-uXRCE\" package...\n"
 git clone https://github.com/eProsima/Micro-XRCE-DDS-Agent.git src/Micro-XRCE-DDS-Agent
 echo "Building \"MicroDDS-uXRCE\" package...\n"
-colcon build --package-select microxrcedds_agent
+colcon build --packages-select microxrcedds_agent
 
 echo "Sourcing environment.."
 

@@ -40,9 +40,12 @@ OffboardControl::OffboardControl() : Node("v6c_offboard_control")
 // MAIN LOOP
 void OffboardControl::timer_callback()
 {
-    // OffboardControlMode publish - Heartbeat
-    ctrl_mode_msg_.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    offboard_ctrl_mode_pub_->publish(ctrl_mode_msg_);
+    if(vehicle_flight_mode_ != px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_LAND)
+    {
+        // OffboardControlMode publish - Heartbeat
+        ctrl_mode_msg_.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        offboard_ctrl_mode_pub_->publish(ctrl_mode_msg_);
+    }
 
     switch(setpoints_reached_)
     {
@@ -60,7 +63,25 @@ void OffboardControl::timer_callback()
         case 1:
             if(check_setpoint_distance)
             {
-                define_setpoint()
+                define_setpoint(-1.0, 0.0, -1.0, 0.0);
+                publish_trajectory_setpoint(current_setpoint_);
+                ++setpoints_reached_;
+            }
+            break;
+        
+        case 2:
+            if(check_setpoint_distance)
+            {
+                define_setpoint(-1.0, 0.0, 0.1, 0.0);
+                publish_trajectory_setpoint(current_setpoint_);
+                ++setpoints_reached_;
+            }
+            break;
+
+        case 3:
+            if(check_setpoint_distance)
+            {
+                engage_landing();
             }
             break;
     }
