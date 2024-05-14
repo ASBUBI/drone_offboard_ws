@@ -3,5 +3,6 @@
 **/install
 **/log
 src/px4_msgs
+src/Micro-XRCE-DDS-Agent
 **/vicon_libs
 **/LICENSE
