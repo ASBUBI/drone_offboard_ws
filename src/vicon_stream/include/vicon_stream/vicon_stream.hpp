@@ -8,6 +8,7 @@
 #include <chrono>
 #include <iostream>
 #include <csignal>
+#include <unistd.h>
 
 class ViconClient : public rclcpp::Node
 {

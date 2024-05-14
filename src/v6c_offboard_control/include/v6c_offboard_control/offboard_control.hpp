@@ -13,6 +13,7 @@
 #include <chrono>
 #include <iostream>
 #include <cmath>
+#include <unistd.h>
 
 struct Setpoint {
     float x;
