@@ -28,8 +28,8 @@ class ViconClient : public rclcpp::Node
 
     private:
         ViconDataStreamSDK::CPP::Client vicon_client_;
-        std::string hostname_;
-        unsigned int buffer_size_;
+        std::string hostname_ = "192.168.50.56";
+        unsigned int buffer_size_ = 200;
 
         rclcpp::TimerBase::SharedPtr timer_;
 };
