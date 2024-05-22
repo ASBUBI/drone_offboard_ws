@@ -51,8 +51,8 @@ void OffboardControl::timer_callback()
     {
         case 0:
             // Setup the drone to takeoff (sent as first setpoint)
-            arm();
             engage_offboard_mode();
+            arm();
             // Define first setpoint (takeoff)
             define_setpoint(0.0, 0.0, -1.0, 0.0);
             publish_trajectory_setpoint(current_setpoint_);
