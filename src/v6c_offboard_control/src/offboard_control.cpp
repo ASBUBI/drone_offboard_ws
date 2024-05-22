@@ -15,8 +15,7 @@ OffboardControl::OffboardControl() : Node("v6c_offboard_control")
     this->ctrl_mode_msg_.acceleration = false;
     this->ctrl_mode_msg_.attitude = false;
     this->ctrl_mode_msg_.body_rate = false;
-    this->ctrl_mode_msg_.thrust_and_torque = false;
-    this->ctrl_mode_msg_.direct_actuator = false;
+    this->ctrl_mode_msg_.actuator = false;
     this->offboard_ctrl_mode_pub_ = this->create_publisher<px4_msgs::msg::OffboardControlMode>("/fmu/in/offboard_control_mode", rclcpp::SensorDataQoS());
 
     // Vehicle command init
