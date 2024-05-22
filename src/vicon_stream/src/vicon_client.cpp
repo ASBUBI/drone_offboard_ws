@@ -3,10 +3,10 @@
 ViconClient::ViconClient() : Node("vicon_stream")
 {
     // Parameters definition
-    // this->declare_parameter<std::string>("hostname","192.168.50.56");
-    // this->declare_parameter<int>("buffer_size",200);
-    // this->get_parameter("hostname", hostname_);
-    // this->get_parameter("buffer_size", buffer_size_);
+    this->declare_parameter<std::string>("hostname","192.168.50.56");
+    this->declare_parameter<int>("buffer_size",200);
+    this->get_parameter("hostname", hostname_);
+    this->get_parameter("buffer_size", buffer_size_);
 
     // Defining ViconClient frame as FRD to match streaming to PX4
     this->vicon_client_.SetAxisMapping(
@@ -111,6 +111,11 @@ void ViconClient::timer_callback()
     {
         stream();
     }
+
+    // Signal handler to catch SIGINT and disconnect before rclcpp::shutdown
+    signal(SIGINT, [](int sig_num){
+        disconnect();
+    });
 }
 
 void ViconClient::publish_vehicle_odometry(ViconDataStreamSDK::CPP::Output_GetSegmentGlobalTranslation position, ViconDataStreamSDK::CPP::Output_GetSegmentGlobalRotationQuaternion attitude_q)
@@ -143,8 +148,7 @@ int main(int argc, char * argv[])
     node->connect();
 
     rclcpp::spin(node);
-
-    node->disconnect();
+    
     rclcpp::shutdown();
     return 0;
 }
