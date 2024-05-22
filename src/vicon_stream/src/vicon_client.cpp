@@ -111,6 +111,11 @@ void ViconClient::timer_callback()
     {
         stream();
     }
+
+    // Signal handler to catch SIGINT and disconnect before rclcpp::shutdown 
+    signal(SIGINT, [this](int sig_num){
+        this->disconnect();
+    });
 }
 
 void ViconClient::publish_vehicle_odometry(ViconDataStreamSDK::CPP::Output_GetSegmentGlobalTranslation position, ViconDataStreamSDK::CPP::Output_GetSegmentGlobalRotationQuaternion attitude_q)
