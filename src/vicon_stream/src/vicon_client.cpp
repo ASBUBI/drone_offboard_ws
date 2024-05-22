@@ -114,7 +114,7 @@ void ViconClient::timer_callback()
 
     // Signal handler to catch SIGINT and disconnect before rclcpp::shutdown
     signal(SIGINT, [&](){
-        this->disconnect();
+        disconnect();
     });
 }
 
