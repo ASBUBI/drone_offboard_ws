@@ -37,7 +37,7 @@ RUN rosdep update
 # Source the ROS setup file
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
  
-WORKDIR /home/$USERNAME/drones_ws
+WORKDIR /home/$USERNAME
  
 # clone and build px4
 RUN git clone --depth 1 --branch release/1.14 https://github.com/PX4/PX4-Autopilot.git --recursive
@@ -45,7 +45,7 @@ RUN git clone --depth 1 --branch release/1.14 https://github.com/PX4/PX4-Autopil
 RUN ./PX4-Autopilot/Tools/setup/ubuntu.sh
  
 # install Micro-XRCE-DDS-Agent
-RUN git clone -b ros2 https://github.com/eProsima/Micro-XRCE-DDS-Agent.git /tmp/micro-xrce-dds-agent \
+RUN git clone --branch ros2 https://github.com/eProsima/Micro-XRCE-DDS-Agent.git /tmp/micro-xrce-dds-agent \
 && cd /tmp/micro-xrce-dds-agent \
 && mkdir build && cd build \
 && cmake .. \
