@@ -2,5 +2,4 @@
 
 offboard_control:
   ros__parameters:
-    hostname: "192.168.50.56"
-    buffer_size: 200
+    setpoint_tolerance: 0.1

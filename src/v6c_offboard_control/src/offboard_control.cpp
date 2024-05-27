@@ -19,11 +19,11 @@ OffboardControl::OffboardControl() : Node("v6c_offboard_control")
     this->offboard_ctrl_mode_pub_ = this->create_publisher<px4_msgs::msg::OffboardControlMode>("/fmu/in/offboard_control_mode", rclcpp::SensorDataQoS());
 
     // Vehicle command init
-    this->vehicle_command_pub_ = this->create_publisher<px4_msgs::msg::VehicleCommand>("fmu/in/vehicle_command",10);
+    this->vehicle_command_pub_ = this->create_publisher<px4_msgs::msg::VehicleCommand>("/fmu/in/vehicle_command",10);
 
     // Vehicle Status subscribtion -> to understand vehicle current flight mode
     this->vehicle_status_sub_ = this->create_subscription<px4_msgs::msg::VehicleStatus>(
-        "fmu/out/vehicle_status", rclcpp::SensorDataQoS(), 
+        "/fmu/out/vehicle_status", rclcpp::SensorDataQoS(), 
         std::bind(&OffboardControl::vehicle_status_callback, this, std::placeholders::_1)
     );
     // Vehicle local position subscription - trajectory setpoint definition
@@ -51,8 +51,8 @@ void OffboardControl::timer_callback()
     {
         case 0:
             // Setup the drone to takeoff (sent as first setpoint)
-            arm();
             engage_offboard_mode();
+            arm();
             // Define first setpoint (takeoff)
             define_setpoint(0.0, 0.0, -1.0, 0.0);
             publish_trajectory_setpoint(current_setpoint_);
@@ -64,7 +64,7 @@ void OffboardControl::timer_callback()
             break;
         
         case 2:
-            define_setpoint(-1.0, 0.0, 0.1, 0.0);
+            define_setpoint(-1.0, 0.0, -1.0, 0.0);
             publish_trajectory_setpoint(current_setpoint_);
             break;
 
@@ -233,5 +233,7 @@ int main(int argc, char * argv[])
 
 /**
  * Maybe switch VehicleStatus message to service call instead of topic pub/sub
+ * 
+ * 4Future: topics for each drone will be published in its namespace (ex. tag, aux1, aux2 ecc..)
  * 
 */
