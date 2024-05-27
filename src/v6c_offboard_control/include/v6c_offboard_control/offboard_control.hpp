@@ -66,7 +66,7 @@ class OffboardControl : public rclcpp::Node
         // Drone proprietary vars
         unsigned short vehicle_flight_mode_;
         unsigned short setpoints_reached_ = 0;
-        float setpoint_tolerance_;
+        std::string name_;
         struct Setpoint current_setpoint_;
 };
 

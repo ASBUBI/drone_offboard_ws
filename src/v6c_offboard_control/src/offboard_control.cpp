@@ -3,8 +3,8 @@
 OffboardControl::OffboardControl() : Node("v6c_offboard_control")
 {
     // Parameters definition
-    this->declare_parameter<float>("setpoint_tolerance", 0.1);
-    this->get_parameter<float>("setpoint_tolerance", setpoint_tolerance_);
+    this->declare_parameter<std::string>("drone_name", "");
+    this->get_parameter<float>("drone_name", name_);
 
     // 50Hz rate
     this->timer_ = this->create_wall_timer(std::chrono::milliseconds(20), std::bind(&OffboardControl::timer_callback, this));
@@ -16,7 +16,7 @@ OffboardControl::OffboardControl() : Node("v6c_offboard_control")
     this->ctrl_mode_msg_.attitude = false;
     this->ctrl_mode_msg_.body_rate = false;
     this->ctrl_mode_msg_.actuator = false;
-    this->offboard_ctrl_mode_pub_ = this->create_publisher<px4_msgs::msg::OffboardControlMode>("/fmu/in/offboard_control_mode", rclcpp::SensorDataQoS());
+    this->offboard_ctrl_mode_pub_ = this->create_publisher<px4_msgs::msg::OffboardControlMode>("/"+name_+"/fmu/in/offboard_control_mode", rclcpp::SensorDataQoS());
 
     // Vehicle command init
     this->vehicle_command_pub_ = this->create_publisher<px4_msgs::msg::VehicleCommand>("fmu/in/vehicle_command",10);
