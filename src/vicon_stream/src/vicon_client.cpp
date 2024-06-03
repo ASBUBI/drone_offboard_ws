@@ -121,9 +121,9 @@ void ViconClient::publish_vehicle_odometry(ViconDataStreamSDK::CPP::Output_GetSe
     // To check || Need to define ViconClient axis mapping to FRD before
     msg.pose_frame = px4_msgs::msg::VehicleOdometry::POSE_FRAME_FRD;
     msg.position = {
-        static_cast<float>(position.Translation[0]),
-        static_cast<float>(position.Translation[1]),
-        static_cast<float>(position.Translation[2]) 
+        static_cast<float>(position.Translation[0]) / float(1000),
+        static_cast<float>(position.Translation[1]) / float(1000),
+        static_cast<float>(position.Translation[2]) / float(1000) 
     };
     msg.q = {
         static_cast<float>(attitude_q.Rotation[0]),
@@ -148,3 +148,10 @@ int main(int argc, char * argv[])
     rclcpp::shutdown();
     return 0;
 }
+
+/**
+ * TODO:
+ *  • Logger drone position tracked by Vicon in new Node to not interfere with communication for local position -> ESSENTIAL
+ *  • Maybe retrieve data from drone controls to understand what happens and what it does
+ *  • Ensure safety kill is working properly -> ABSOLUTELY NECESSARY
+*/

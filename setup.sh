@@ -1,15 +1,5 @@
 # Source ROS2 distro
-
-if [ $SHELL == "/usr/bin/zsh" ]
-then
-    source /opt/ros/humble/setup.zsh
-elif [ $SHELL == "/usr/bin/bash" ]
-then
-    source /opt/ros/humble/setup.bash
-else
-    echo "No allowed SHELL found"
-    exit 1
-fi
+source /opt/ros/humble/setup.sh
 
 # Check whether the Vicon SDK is already installed (prev. run script)
 if [ -d "$HOME/drone_offboard_ws/src/vicon_stream/vicon_libs" ]
@@ -41,15 +31,14 @@ colcon build --packages-select px4_msgs
 
 source $HOME/drone_offboard_ws/install/local_setup.sh
 
-echo "Building drone offboard specific packages..."
+echo "Building drone offboard specific packages... --- vicon_stream --- v6c_offboard_control ---"
 colcon build --packages-select vicon_stream v6c_offboard_control
 
-# uXRCE-DDS version "ros2"
-echo "Importing \"MicroDDS-uXRCE\" package...\n"
-git clone -b foxy https://github.com/eProsima/Micro-XRCE-DDS-Agent.git $HOME/drone_offboard_ws/src/Micro-XRCE-DDS-Agent
-echo "Building \"MicroDDS-uXRCE\" package...\n"
-colcon build --packages-select microxrcedds_agent
-
 echo "Sourcing environment.."
-
 source $HOME/drone_offboard_ws/install/local_setup.sh
+
+# uXRCE-DDS version "ros2"
+# echo "Importing \"MicroDDS-uXRCE\" package...\n"
+# git clone -b foxy https://github.com/eProsima/Micro-XRCE-DDS-Agent.git $HOME/drone_offboard_ws/src/Micro-XRCE-DDS-Agent
+# echo "Building \"MicroDDS-uXRCE\" package...\n"
+# colcon build --packages-select microxrcedds_agent
