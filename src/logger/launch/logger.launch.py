@@ -12,7 +12,7 @@ def generate_launch_description():
     
     logging_level = 'INFO'
 
-    vicon_client = Node(
+    logger = Node(
         package = 'logger',
         executable = 'logger',
         name = 'logger',

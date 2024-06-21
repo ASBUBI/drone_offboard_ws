@@ -2,6 +2,7 @@
 **/build
 **/install
 **/log
+**/logs
 src/px4_msgs
 src/Micro-XRCE-DDS-Agent
 **/vicon_libs

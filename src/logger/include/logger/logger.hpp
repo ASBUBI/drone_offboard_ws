@@ -19,6 +19,7 @@ class Logger : public rclcpp::Node
     public:
         Logger();
         void mocap_odometry_callback(const px4_msgs::msg::VehicleOdometry & msg);
+        void vehicle_odometry_callback(const px4_msgs::msg::VehicleOdometry & msg);
         void land_detection_callback(const px4_msgs::msg::VehicleLandDetected & msg);
         void trajectory_setpoint_callback(const px4_msgs::msg::TrajectorySetpoint & msg);
         void vehicle_status_callback(const px4_msgs::msg::VehicleStatus & msg);
@@ -32,6 +33,7 @@ class Logger : public rclcpp::Node
 
         // Subscriptions
         rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr mocap_odometry_sub_;
+        rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr vehicle_odometry_sub_;
         rclcpp::Subscription<px4_msgs::msg::VehicleLandDetected>::SharedPtr land_detection_sub_;
         rclcpp::Subscription<px4_msgs::msg::TrajectorySetpoint>::SharedPtr trajectory_setpoint_sub_;
         rclcpp::Subscription<px4_msgs::msg::VehicleStatus>::SharedPtr vehicle_status_sub_;

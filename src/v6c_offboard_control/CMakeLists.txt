@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(px4_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -22,13 +23,25 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/VehicleCommand.srv"
+  DEPENDENCIES px4_msgs
+)
+
 add_executable(offboard_control src/offboard_control.cpp)
 target_include_directories(
   offboard_control PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
   $<INSTALL_INTERFACE:include>
 )
+
+rosidl_get_typesupport_target(cpp_typesupport_target
+  ${PROJECT_NAME} rosidl_typesupport_cpp)
+
+target_link_libraries(offboard_control "${cpp_typesupport_target}")
+
 ament_target_dependencies(offboard_control rclcpp px4_msgs)
+ament_export_dependencies(rosidl_default_runtime)
 
 install(TARGETS offboard_control DESTINATION lib/${PROJECT_NAME})
 

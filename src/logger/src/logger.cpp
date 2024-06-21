@@ -3,7 +3,9 @@
 Logger::Logger() : Node("logger")
 {
     // Parameters definition
-    this->filename_ = std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()) +".json"; //as_string ?
+    const auto now = std::chrono::system_clock::now();
+    const std::time_t t_c = std::chrono::system_clock::to_time_t(now);
+    this->filename_ =  std::string(std::ctime(&t_c)) +".json"; //as_string ?
 
     // Extract file location
     char* path_ptr = std::getenv("COLCON_PREFIX_PATH");
@@ -20,9 +22,15 @@ Logger::Logger() : Node("logger")
     this->file_ = std::ofstream(file_path_ / filename_);
 
     // Subscriptions
+    
     this->mocap_odometry_sub_ = this->create_subscription<px4_msgs::msg::VehicleOdometry>(
         "/fmu/in/vehicle_visual_odometry", rclcpp::SensorDataQoS(),
         std::bind(&Logger::mocap_odometry_callback, this, std::placeholders::_1)
+    );
+
+    this->vehicle_odometry_sub_ = this->create_subscription<px4_msgs::msg::VehicleOdometry>(
+        "/fmu/out/vehicle_odometry", rclcpp::SensorDataQoS(),
+        std::bind(&Logger::vehicle_odometry_callback, this, std::placeholders::_1)
     );
 
     this->land_detection_sub_ = this->create_subscription<px4_msgs::msg::VehicleLandDetected>(
@@ -46,6 +54,25 @@ void Logger::mocap_odometry_callback(const px4_msgs::msg::VehicleOdometry & msg)
 {
     data_.push_back({
         {"topic", "mocap_odometry"},
+        {"position",{
+            {"x",msg.position[0]},
+            {"y",msg.position[1]},
+            {"z",msg.position[2]}
+        }},
+        {"q", {
+            {"q0",msg.q[0]},
+            {"q1",msg.q[1]},
+            {"q2",msg.q[2]},
+            {"q3",msg.q[3]}
+        }},
+        {"timestamp", msg.timestamp}
+    });
+}
+
+void Logger::vehicle_odometry_callback(const px4_msgs::msg::VehicleOdometry & msg)
+{
+    data_.push_back({
+        {"topic", "vehicle_odometry"},
         {"position",{
             {"x",msg.position[0]},
             {"y",msg.position[1]},
