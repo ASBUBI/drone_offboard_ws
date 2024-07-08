@@ -10,10 +10,12 @@ OffboardControl::OffboardControl() : Node("v6c_offboard_control")
 {
     // Parameters definition
     this->declare_parameter<float>("setpoint_tolerance", 0.1);
+    this->declare_parameter<std::string>("filepath", "/home/fabio/drone_offboard_ws/src/v6c_offboard_control/config/trajectory.txt");
     this->get_parameter<float>("setpoint_tolerance", setpoint_tolerance_);
+    this->get_parameter<std::string>("filepath", filepath_);
 
-    // 50Hz rate
-    this->timer_ = this->create_wall_timer(std::chrono::milliseconds(20), std::bind(&OffboardControl::timer_callback, this));
+    // 33Hz rate
+    this->timer_ = this->create_wall_timer(std::chrono::milliseconds(30), std::bind(&OffboardControl::timer_callback, this));
 
     //QoS policies for subscriptions
     rmw_qos_profile_t qos_profile = rmw_qos_profile_sensor_data;
@@ -34,13 +36,45 @@ OffboardControl::OffboardControl() : Node("v6c_offboard_control")
         std::bind(&OffboardControl::vehicle_local_position_callback, this, std::placeholders::_1)
     );
 
-    // Vehicle Command Service
-    this->vehicle_command_client_ = this->create_client<px4_msgs::srv::VehicleCommand>("/fmu/vehicle_command");
-}
+    // Vehicle status subscription  ->  nav_state arming_state
+    this->vehicle_status_sub_ = this->create_subscription<px4_msgs::msg::VehicleStatus>(
+        "/fmu/out/vehicle_status", qos,
+        std::bind(&OffboardControl::vehicle_status_callback, this, std::placeholders::_1)
+    );
 
-/**
- * Drone APIs
-*/
+    // Trajectory definition from file
+    std::ifstream file (filepath_);
+    if(file.is_open())
+    {
+        RCLCPP_INFO(this->get_logger(), "File FOUND");
+        float f;
+        struct Point temp;
+        for(uint8_t i=1; file >> f; i++)
+        {
+            switch(i%3)
+            {
+                case 2 :
+                    temp.x = f;
+                    break;
+                case 1 :
+                    temp.y = f;
+                    break;
+                case 0 :
+                    temp.z = f;
+                    trajectory.push_back(temp);
+                    RCLCPP_INFO(this->get_logger(), "Setpoint: [%.1f, %.1f, %.1f]", temp.x, temp.y, temp.z);
+                    break;
+                default :
+                    break;
+            }
+        }
+    }
+    else
+    {
+        RCLCPP_INFO(this->get_logger(), "File NOT FOUND, skip");
+        // rclcpp::shutdown();
+    }
+}
 
 // MAIN LOOP
 void OffboardControl::timer_callback()
@@ -54,22 +88,19 @@ void OffboardControl::timer_callback()
     {
         case State::init :
             engage_offboard_mode();
-            state_ = State::offboard_requested;
+            state_ = State::offboard_check;
             break;
         
-        case State::offboard_requested :
-            if(service_done_)
+        case State::offboard_check :
+            if(nav_state_ == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_OFFBOARD) // 14
             {
-                if(service_result_ == 0) // substitute with px4_msgs::msg::VehicleCommandAck::VEHICLE_CMD_RESULT_ACCEPTED
-                {
-                    RCLCPP_INFO(this->get_logger(), "Entered OFFBOARD mode");
-                    state_ = State::wait_for_stable_offboard;
-                }
-                else
-                {
-                    RCLCPP_ERROR(this->get_logger(), "Failed to enter OFFBOARD mode, exiting...");
-                    rclcpp::shutdown();
-                }
+                RCLCPP_INFO(this->get_logger(), "Entered OFFBOARD mode");
+                state_ = State::wait_for_stable_offboard;
+            }
+            else
+            {
+                RCLCPP_ERROR(this->get_logger(), "Failed to enter OFFBOARD mode, requesting again...");
+                engage_offboard_mode();
             }
             break;
         
@@ -77,27 +108,23 @@ void OffboardControl::timer_callback()
             if(++timer_steps > 10)
             {
                 arm();
-                state_ = State::arm_requested;
+                state_ = State::arm_check;
             }
             break;
         
-        case State::arm_requested :
-            if(service_done_)
+        case State::arm_check:
+            if(arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_ARMED) // 2
             {
-                if(service_result_ == 0)
+                if(++timer_steps > 100)
                 {
-                    if(++timer_steps > 100)
-                    {
-                        RCLCPP_INFO(this->get_logger(), "Vehicle ARMED");
-                        state_ = State::armed;
-                    }
-                    
-                }
-                else
-                {
-                    RCLCPP_ERROR(this->get_logger(), "Failed to ARM, exiting...");
-                    rclcpp::shutdown();
-                }
+                    RCLCPP_INFO(this->get_logger(), "Vehicle ARMED");
+                    state_ = State::armed;
+                }              
+            }
+            else
+            {
+                RCLCPP_ERROR(this->get_logger(), "Failed to ARM, requesting again...");
+                arm();
             }
             break;
         
@@ -179,18 +206,15 @@ void OffboardControl::timer_callback()
             break;
 
         case State::landed_check :
-            if(service_done_)
+            if(arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_STANDBY) // 1
             {
-                if(service_result_ == 0)
-                {
-                    RCLCPP_INFO(this->get_logger(), "Disarm command executed, hopefully you a had a safe land! :)");
-                    rclcpp::shutdown();
-                }
-                else
-                {
-                    RCLCPP_ERROR(this->get_logger(), "Disarm command NOT executed, DANGER: REITERATE!");
-                    disarm();
-                }
+                RCLCPP_INFO(this->get_logger(), "Disarm command executed, hopefully you a had a safe land! :)");
+                rclcpp::shutdown();
+            }
+            else
+            {
+                RCLCPP_ERROR(this->get_logger(), "Disarm command NOT executed, DANGER: REITERATE!");
+                disarm();
             }
             break;
 
@@ -198,6 +222,10 @@ void OffboardControl::timer_callback()
             break;
     }
 }
+
+/**
+ * Drone APIs
+*/
 
 // MAVLink common message set
 void OffboardControl::publish_vehicle_command(uint16_t command, float param1, float param2)
@@ -218,20 +246,20 @@ void OffboardControl::publish_vehicle_command(uint16_t command, float param1, fl
 void OffboardControl::arm()
 {   
     RCLCPP_INFO(this->get_logger(), "Requesting ARM command");
-    request_vehicle_command(px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 1.0, 21196);
+    publish_vehicle_command(px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 1.0, 21196);
 }
 
 void OffboardControl::disarm()
 {
     RCLCPP_INFO(this->get_logger(), "Requesting DISARM command");
-    request_vehicle_command(px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 0.0, 21196);
+    publish_vehicle_command(px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 0.0, 21196);
 }
 
 void OffboardControl::engage_offboard_mode()
 {
     // Send command to switch to offboard mode
     RCLCPP_INFO(this->get_logger(), "Requesting switch to OFFBOARD mode");
-    request_vehicle_command(px4_msgs::msg::VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1., 6.);
+    publish_vehicle_command(px4_msgs::msg::VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1., 6.);
 }
 
 void OffboardControl::publish_trajectory_setpoint(const float & x, const float & y, const float & z, const float & yaw)
@@ -261,8 +289,7 @@ void OffboardControl::publish_offboard_control_mode()
     ctrl_mode_msg_.acceleration = false;
     ctrl_mode_msg_.attitude = false; 
     ctrl_mode_msg_.body_rate = false;
-    ctrl_mode_msg_.thrust_and_torque = false;
-    ctrl_mode_msg_.direct_actuator = false;
+    ctrl_mode_msg_.actuator = false;
     ctrl_mode_msg_.timestamp = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     offboard_ctrl_mode_pub_->publish(ctrl_mode_msg_);
 }
@@ -274,73 +301,10 @@ void OffboardControl::vehicle_local_position_callback(const px4_msgs::msg::Vehic
     local_pos_.z = msg.z;
 }
 
-void OffboardControl::request_vehicle_command(uint16_t command, float param1, float param2)
+void OffboardControl::vehicle_status_callback(const px4_msgs::msg::VehicleStatus & msg)
 {
-    auto request = std::make_shared<px4_msgs::srv::VehicleCommand::Request>();
-
-    px4_msgs::msg::VehicleCommand msg{};
-    msg.param1 = param1;
-    msg.param2 = param2;
-	msg.command = command;
-	msg.target_system = 1;
-	msg.target_component = 1;
-	msg.source_system = 1;
-	msg.source_component = 1;
-	msg.from_external = true;
-	msg.timestamp = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	request->request = msg;
-
-    service_done_ = false;
-    auto result = vehicle_command_client_->async_send_request(
-        request, std::bind(&OffboardControl::response_callback, this, std::placeholders::_1)
-    );
-
-    RCLCPP_INFO(this->get_logger(), "Vehicle Command sent... waiting for response");
-}
-
-void OffboardControl::response_callback(rclcpp::Client<px4_msgs::srv::VehicleCommand>::SharedFuture response)
-{
-    RCLCPP_INFO(this->get_logger(), "Entered response callback service, waiting..");
-    auto status = response.wait_for(std::chrono::seconds(1));
-    if(status == std::future_status::ready)
-    {
-        auto reply = response.get()->reply;
-        service_result_ = reply.result;
-
-        switch(service_result_)
-        {
-            case reply.VEHICLE_CMD_RESULT_ACCEPTED:
-                RCLCPP_INFO(this->get_logger(), "Command Accepted");
-                break;
-            case reply.VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED:
-                RCLCPP_WARN(this->get_logger(), "command temporarily rejected");
-                break;
-            case reply.VEHICLE_CMD_RESULT_DENIED:
-                RCLCPP_WARN(this->get_logger(), "command denied");
-                break;
-            case reply.VEHICLE_CMD_RESULT_UNSUPPORTED:
-                RCLCPP_WARN(this->get_logger(), "command unsupported");
-                break;
-            case reply.VEHICLE_CMD_RESULT_FAILED:
-                RCLCPP_WARN(this->get_logger(), "command failed");
-                break;
-            case reply.VEHICLE_CMD_RESULT_IN_PROGRESS:
-                RCLCPP_WARN(this->get_logger(), "command in progress");
-                break;
-            case reply.VEHICLE_CMD_RESULT_CANCELLED:
-                RCLCPP_WARN(this->get_logger(), "command cancelled");
-                break;
-            default:
-                RCLCPP_WARN(this->get_logger(), "command reply unknown");
-                break;
-        }
-
-        service_done_ = true;
-    }
-    else
-    {
-        RCLCPP_INFO(this->get_logger(), "Service In-Progress...");
-    }
+    nav_state_ = msg.nav_state;
+    arming_state_ = msg.arming_state;
 }
 
 bool OffboardControl::check_setpoint_distance(const struct Point & position, const struct Point & setpoint)

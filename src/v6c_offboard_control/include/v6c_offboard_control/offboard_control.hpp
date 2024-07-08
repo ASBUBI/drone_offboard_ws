@@ -5,7 +5,7 @@
 #include "px4_msgs/msg/vehicle_odometry.hpp"
 #include "px4_msgs/msg/offboard_control_mode.hpp"
 #include "px4_msgs/msg/vehicle_command.hpp"
-#include "px4_msgs/msg/vehicle_command_ack.hpp"
+// #include "px4_msgs/msg/vehicle_command_ack.hpp"
 #include "px4_msgs/msg/trajectory_setpoint.hpp"
 #include "px4_msgs/msg/vehicle_status.hpp"
 #include "px4_msgs/msg/vehicle_local_position.hpp"
@@ -14,6 +14,7 @@
 #include <vector>
 #include <chrono>
 #include <iostream>
+#include <fstream>
 #include <cmath>
 #include <unistd.h>
 
@@ -25,9 +26,9 @@ struct Point {
 
 enum class State {
     init,
-    offboard_requested,
+    offboard_check,
     wait_for_stable_offboard,
-    arm_requested,
+    arm_check,
     armed,
     takeoff,
     setpoint1,
@@ -57,10 +58,7 @@ class OffboardControl : public rclcpp::Node
 
         // Subscribers callbacks
         void vehicle_local_position_callback(const px4_msgs::msg::VehicleLocalPosition & msg);
-
-        // Services
-        void request_vehicle_command(uint16_t command, float param1 = 0.0, float param2 = 0.0);
-        void response_callback(rclcpp::Client<px4_msgs::srv::VehicleCommand>::SharedFuture response);
+        void vehicle_status_callback(const px4_msgs::msg::VehicleStatus & msg);
 
         bool check_setpoint_distance(const struct Point & position, const struct Point & setpoint);
         bool check_altitude_for_landing(const struct Point & position);
@@ -72,24 +70,25 @@ class OffboardControl : public rclcpp::Node
 
         // Subscribers
         rclcpp::Subscription<px4_msgs::msg::VehicleLocalPosition>::SharedPtr vehicle_local_position_sub_;
+        rclcpp::Subscription<px4_msgs::msg::VehicleStatus>::SharedPtr vehicle_status_sub_;
         
         // Publishers
         rclcpp::Publisher<px4_msgs::msg::OffboardControlMode>::SharedPtr offboard_ctrl_mode_pub_;
         rclcpp::Publisher<px4_msgs::msg::VehicleCommand>::SharedPtr vehicle_command_pub_;
         rclcpp::Publisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr trajectory_setpoint_pub_;
 
-        //Client for Services
-        rclcpp::Client<px4_msgs::srv::VehicleCommand>::SharedPtr vehicle_command_client_;
-        uint8_t service_result_;
-        bool service_done_;
-
         // Drone proprietary vars
-        unsigned short vehicle_flight_mode_;
+        uint8_t nav_state_;
+        uint8_t arming_state_;
         unsigned short setpoint_reached_ = 0;
         float setpoint_tolerance_;
         struct Point current_setpoint_;
         struct Point local_pos_;
         State state_;
+
+        // Trajectory
+        std::string filepath_;
+        std::vector<struct Point> trajectory;
 };
 
 #endif
